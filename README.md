@@ -116,7 +116,7 @@ TODO: Add secret scanning to this workshop. It's already documented in the [Gitn
 
 5. Stop both GitSpaces once you’ve verified the versions are running correctly.
 
-TODO: What other gitspaces features can we show?
+TODO: Mention that these gitspaces instances are already configured with git credentials from Harness Open Source so you don't have to configure git credentials.
 
 ## Pipeline
 
