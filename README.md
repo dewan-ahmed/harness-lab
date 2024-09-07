@@ -130,6 +130,10 @@ TODO: We have a pipeline in later section that automates the build, test, and pu
 
 ## Artifact Registry
 
+TODO: (This is a docs update assuming Harness Open Source instance is running on port 3000) 
+- For local installations, add `host.docker.internal:3000` as an insecure-registry in your docker config.
+- For cloud VM installations, add `YOUR_IP:3000` as an insecure-registry in your docker config.
+
 ### Create an Artifact Registry
 
 1. Navigate to **Artifact Registries --> + New Artifact Registry** and create a new artifact registry named "harness-reg".
