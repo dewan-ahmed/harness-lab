@@ -6,42 +6,58 @@ TODO: Make sure the instructions are clear and valid.
 
 TODO: Add screenshots where text instructions are not enough.
 
-This lab will guide you through setting up and using Harness Open Source (referred to as "Harness" from now on), with a focus on managing a project, using GitSpaces, creating pipelines, and setting up an artifact registry. By the end of the lab, you'll be able to create a project, import a repository, work with GitSpaces, and automate build and deployment pipelines.
+This lab will guide you through setting up and using Harness Open Source (referred to as "Harness" from now on), with a focus on managing a project, using GitSpaces, creating pipelines, and setting up an artifact registry. By the end of the lab, you'll be able to create a project, import a repository, work with GitSpaces, and automate build pipelines.
 
 ## Prerequisites
 
 Before starting, ensure you have the following installed on your local machine:
 
 - Docker
-- kubectl (CD section to be added)
-- k3d (CD section to be added)
 - VS Code (optional but recommended for working with GitSpaces)
 
-## Installation
+If Docker is not already installed on your system, you can set it up using [Colima](https://github.com/abiosoft/colima?tab=readme-ov-file#installation), a lightweight container runtime for macOS and Linux. Note that you'll still need the Docker CLI (Docker client) to interact with Colima, so ensure that the Docker client is installed and configured on your machine.
 
-Install Harness using Docker:
+## Setup and Installation
 
-Run the following command to start a Harness instance:
+1. Create a common network:
+
+```bash
+docker network create harness
+```
+
+2. Run the following command to start a Harness instance that uses the `harness` network:
 
 ```bash
 docker run -d \
+  --network=harness \
+  -e GITNESS_CI_CONTAINER_NETWORKS=harness \
+  -e GITNESS_URL_REGISTRY=http://gitness:3000 \
   -p 3000:3000 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /tmp/gitness:/data \
-  --name gitness \
+  --name harness \
   --restart always \
-  harness/gitness
+  harness/harness
 ```
 
 This command starts the Harness server, exposes it on port 3000, and mounts necessary volumes for Docker and persistent data storage.
+
+3. Follow these steps to create an admin user:
+a. Once the container is running, open http://localhost:3000 in your browser.
+b. Select **Sign Up**.
+c. Enter a User ID (`admin`), Email (`admin@example.com`), and Password (`changeit`).
+d.. Select **Sign Up**. (You might see a warning to change your password. You can ignore that warning.)
 
 ## Project and Repository
 
 ### New Project
 
-1. Navigate to your Harness instance at [http://localhost:3000](http://localhost:3000).
-2. Create a new project named "harness-lab".
-3. Add three labels to the project: "dev", "staging", and "prod". You can also set values to each of these labels. TODO: How to use labels in pipeline automation?
+1. Select **New Project**.
+2. Enter a project Name (**harness-lab**) and optional Description (**Open source code hosting, pipelines, artifact registry, dev environments**).
+3. Select **Create Project**.
+> [!NOTE]
+> Harness can also [import projects](https://docs.gitness.com/administration/project-management#import-a-project) from external sources (such as GitLab groups or GitHub organizations).
+4. You can organize your work in Harness by creating labels to categorize pull requests, artifacts, and more. To get started, add three labels to your project: "dev," "staging," and "prod." You can also assign specific values to each of these labels, helping to streamline project management and tracking.
 
 ### Import a Repository
 
