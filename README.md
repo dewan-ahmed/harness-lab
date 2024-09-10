@@ -43,6 +43,7 @@ docker run -d \
 This command starts the Harness server, exposes it on port 3000, and mounts necessary volumes for Docker and persistent data storage.
 
 3. Follow these steps to create an admin user:
+
   a. Once the container is running, open http://localhost:3000 in your browser.
   b. Select **Sign Up**.
   c. Enter a User ID (`admin`), Email (`admin@example.com`), and Password (`changeit`).
