@@ -91,9 +91,6 @@ The response will look something like this:
 ```json
 {"trigger":"branch_created","repo":{"id":1,"path":"testproj/podinfo","identifier":"podinfo","description":"","default_branch":"master","url":"http://159.203.33.47:3000/testproj/podinfo","git_url":"http://159.203.33.47:3000/git/testproj/podinfo.git","git_ssh_url":"ssh://git@159.203.33.47:3022/testproj/podinfo.git","uid":"podinfo"},"principal":{"id":4,"uid":"admin","display_name":"Administrator","email":"mail@example.com","type":"user","created":1724895740977,"updated":1724895740977},"ref":{"name":"refs/heads/feature3","repo":{"id":1,"path":"testproj/podinfo","identifier":"podinfo","description":"","default_branch":"master","url":"http://159.203.33.47:3000/testproj/podinfo","git_url":"http://159.203.33.47:3000/git/testproj/podinfo.git","git_ssh_url":"ssh://git@159.203.33.47:3022/testproj/podinfo.git","uid":"podinfo"}},"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","head_commit":{"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","message":"Updated pipeline testpipe","author":{"identity":{"name":"Administrator","email":"mail@example.com"},"when":"2024-09-03T17:38:34Z"},"committer":{"identity":{"name":"Gitness","email":"system@gitness.io"},"when":"2024-09-03T17:38:34Z"},"added":[],"removed":[],"modified":[]},"commit":{"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","message":"Updated pipeline testpipe","author":{"identity":{"name":"Administrator","email":"mail@example.com"},"when":"2024-09-03T17:38:34Z"},"committer":{"identity":{"name":"Gitness","email":"system@gitness.io"},"when":"2024-09-03T17:38:34Z"},"added":[],"removed":[],"modified":[]},"old_sha":"0000000000000000000000000000000000000000","forced":false}
 ```
-3. Within the **feature** branch, modify `pkg/version/version.go` to update the app version to **6.6.2**. 
-
-TODO: Add secret scanning to this workshop. It's already documented in the [Gitness Lab](https://github.com/harness-community/gitness-lab?tab=readme-ov-file#secret-scanning). We can use Harness PAT instead of AWS creds.
 
 ## GitSpaces
 
@@ -117,7 +114,8 @@ TODO: Add secret scanning to this workshop. It's already documented in the [Gitn
 ### Create gitspaces for VS Code Browser
 
 1. Create a gitspaces for the `podinfo/feature` branch and open it in VS Code Browser.
-2. Build the binary for podinfo by running:
+2. Make a change to `pkg/version/version.go` and update the version to **6.6.2**. Save the file.
+3. Build the binary for podinfo by running:
 
    ```bash
    go build ./cmd/podinfo
@@ -131,9 +129,24 @@ TODO: Add secret scanning to this workshop. It's already documented in the [Gitn
 
 4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.2`.
 
-5. Stop both GitSpaces once you’ve verified the versions are running correctly.
+5. Commit and push the change to feature branch. 
 
-TODO: Mention that these gitspaces instances are already configured with git credentials from Harness Open Source so you don't have to configure git credentials.
+> [!NOTE]
+> Observe that these gitspaces instances are already configured with git credentials from Harness Open Source so you don't have to configure git credentials.
+
+## Secret Detection
+
+From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations= for detecting and preventing hardcoded secrets. 
+
+Now, from one of the gitspaces, create a new file called **config.yaml** and add the following:
+
+```bash
+pat.W3bJ9X4K2L8V7fH1pG0M5nQ.ZM1cP9gB5L2vJ8K6R3wY1N4z.X9V7cT3pB5M1nF2G4J0K
+```
+
+The above follows the same pattern as a Harness Personal Access Token. While this is not a valid token, the built-in scanner in Harness will detect the pattern and prevent you from pushing this commit.
+
+This approach is much safer than detecting secrets after they've been committed.
 
 ## Pipeline
 
