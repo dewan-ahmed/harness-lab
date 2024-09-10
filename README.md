@@ -44,10 +44,10 @@ This command starts the Harness server, exposes it on port 3000, and mounts nece
 
 3. Follow these steps to create an admin user:
 
-  a. Once the container is running, open http://localhost:3000 in your browser.
-  b. Select **Sign Up**.
-  c. Enter a User ID (`admin`), Email (`admin@example.com`), and Password (`changeit`).
-  d. Select **Sign Up**. (You might see a warning to change your password. You can ignore that warning.)
+   - Once the container is running, open http://localhost:3000 in your browser.
+   - Select **Sign Up**.
+   - Enter a User ID (`admin`), Email (`admin@example.com`), and Password (`changeit`).
+   - Select **Sign Up**. (You might see a warning to change your password. You can ignore that warning.)
 
 ## Project and Repository
 
