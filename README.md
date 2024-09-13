@@ -1,11 +1,5 @@
 # harness-lab
 
-TODO: Make sure all styling and formatting are consistent.
-
-TODO: Make sure the instructions are clear and valid.
-
-TODO: Add screenshots where text instructions are not enough.
-
 This lab will guide you through setting up and using Harness Open Source (referred to as "Harness" from now on), with a focus on managing a project, using GitSpaces, creating pipelines, and setting up an artifact registry. By the end of the lab, you'll be able to create a project, import a repository, work with GitSpaces, and automate build pipelines.
 
 ## Prerequisites
@@ -77,7 +71,9 @@ You can send data to HTTP endpoints from actions in your repository, such as ope
 5. Choose **Let me select individual events** and select **Branch created**.
 6. Click **Create Webhook**.
 
-Continue to the next section to push a new branch. Once a new branch is pushed, you’ll see the trigger in action on this site.
+You'll need to reuse this webhook URL in a later section. Go to **Secrets --> + New Secret** and add a new secret called **webhook_url**. Use the value of the uniqur URL you have copied.
+
+Now, click Continue to the next section to push a new branch. Once a new branch is pushed, you’ll see the trigger in action on this site.
 
 ### Create a Branch to Trigger Webhook
 
@@ -160,7 +156,9 @@ TODO: We have a pipeline in later section that automates the build, test, and pu
 
 ## Artifact Registry
 
-TODO: (This is a docs update assuming Harness Open Source instance is running on port 3000) 
+TODO: The following is a docs update assuming Harness Open Source instance is running on port 3000. 
+Reviewers: try following the lab without adding the entry as insecure-registry first and then add if the push fails in the later section.
+
 - For local installations, add `host.docker.internal:3000` as an insecure-registry in your docker config.
 - For cloud VM installations, add `YOUR_IP:3000` as an insecure-registry in your docker config.
 
@@ -174,7 +172,7 @@ TODO: (This is a docs update assuming Harness Open Source instance is running on
 
 1. Navigate to Secrets in the Harness dashboard.
 2. Add two secrets:
-   - `docker_username`: Use the registry username from the previous step.
+   - `docker_username`: Use the registry username from the previous step. For most cases, this would be **admin**.
    - `docker_password`: Use the generated token from the previous step.
 
 ### Create a Pipeline for Build, Test, and Push
@@ -220,11 +218,11 @@ spec:
 version: 1
 ```
 
+Click **Save and Run** to execute the pipeline.
+
 ### Verify
 
 Check the artifact registry to ensure the new image has been successfully pushed.
-
-TODO: Did the above pipeline work? If not, please troubleshoot. This pipeline works on instances launched on cloud VMs.
 
 TODO: How can we show other key artifact registry features? Please update this workshop with those features.
 
@@ -296,14 +294,106 @@ From the "feature" branch, create a new Pull Request (PR) to the "master" branch
 
 The default trigger should automatically kick off the "build-test-push" pipeline. Ensure that a new image is built and pushed to the image registry.
 
-TODO: The grype image scan step might not work. This is still a work in progress. If this step doesn't work, please troubleshoot. Is the pipeline able to pull the image? If the pipeline fails due to grype finding critical vulnerabilities, we can update the fail-on-severity threshold level.
+TODO: The above pipeline should pass upto the go_build_push step but the Grype scan might fail as follows. If you're able to debug, please do. Else, remove this step from the pipeline and continue.
+
+```
+failed to catalog: errors occurred attempting to resolve 'host.docker.internal:3000/testproj/testreg/podinfo:8':
+  - docker: docker not available: failed to connect to Docker daemon. Ensure Docker is running and accessible
+```
 
 ## Deployment
 
-TODO: Add instructions on how to start a local k3d cluster.
-
-TODO: In the [Gitness Lab](https://github.com/harness-community/gitness-lab), we used the helm3 plugin to deploy the app. But that was not the correct approach since we're not generating a helm chart for this app. Please suggest which drone/gitness plugin can be used to deploy the image from artifact registry to the local k3d cluster. Please add a working example.
+TODO: This is a stretch goal but you can try to use one of the drone K8s plugins to deploy the image to a local k3d cluster.
+In the [Gitness Lab](https://github.com/harness-community/gitness-lab), we used the helm3 plugin to deploy the app. But that was not the correct approach since we're not generating a helm chart for this app. Most likely we'll skip the deployment section if we don't get a working k8s plugin. This is Ok since Harness Open Source doesn't have the CD component yet.
 
 ### Notifications
 
-TODO: We can reuse [Notify on build or deployment failure](https://github.com/harness-community/gitness-lab) from previous lab.
+Update the pipeline to add a notifications step on build failure.
+
+```
+kind: pipeline
+spec:
+  stages:
+    - name: build-test-push-scan
+      spec:
+        platform:
+          arch: amd64
+          os: linux
+        steps:
+          - name: go_install
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go install ./...
+            type: run
+          - name: go_test
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go test -v ./...
+            type: run
+          - name: go_build_push
+            type: plugin
+            spec:
+              name: docker
+              inputs:
+                insecure: true
+                repo: host.docker.internal:3000/testproj/testreg/podinfo
+                registry: host.docker.internal:3000
+                username: ${{ secrets.get("docker_username") }}
+                password: ${{ secrets.get("docker_password") }}
+                tags: ${{ build.number }}
+          - name: Grype_Image_Scan
+            type: run
+            when: |
+              build.event == "pull_request"
+              and
+              build.target == "master"
+            spec:
+              container: alpine
+              script: |
+                apk add --no-cache curl            
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin            
+                /tmp/grype-bin/grype host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                echo "Image scan completed!"
+          - name: notify
+            type: plugin
+            when: failure()
+            spec:
+              name: webhook
+              inputs:
+                content_type: application/json
+                urls: ${{ secrets.get("webhook_url") }}
+                template: |
+                  Name: Harness Build Notification
+                  Repo Name: {{ repo.name }}
+                  Build Number {{ build.number }}
+                  Build Event: {{ build.event }}
+                  Build Status: {{ build.status }}    
+      type: ci
+version: 1
+```
+
+Since the Grype_Image_Scan step will fail, the notification step will be triggered and you'll see a notification like this on webhook.site:
+
+```
+Name: Harness Build Notification
+Repo Name: podinfo
+Build Number 9
+Build Event: pull_request
+Build Status: failure
+```
+
+If we remove the Grype image scan step, we'll introduce a failure in a previous step to show the pipeline notification based on a condition.
+
+## Reviewers
+
+- Please make sure all styling and formatting are consistent.
+
+- Please make sure the instructions are clear and valid.
+
+- Please suggest screenshots where text instructions are not enough.
+
+- Do you see a UI error "Cannot read properties of null (reading 'out')" whenever the pipeline executes? Patrick: if this is not already logged, we'll need to log this issue.
