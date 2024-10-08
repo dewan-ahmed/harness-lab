@@ -160,7 +160,8 @@ The response will look something like this:
 ### Create a GitSpace for VS Code Desktop
 
 1. Create a GitSpace for the `podinfo/master` branch and open it in VS Code Desktop.
-2. Build the binary for podinfo by running:
+2. You will need to create a token and add it to the Gitness extension on VSCode. To do so, click **Admin** and then **+ New Token**.
+3. Build the binary for podinfo by running:
 
    ```bash
    go build ./cmd/podinfo
@@ -174,13 +175,15 @@ bash: go: command not found
 
 GitSpaces come with an Ubuntu image (`mcr.microsoft.com/devcontainers/base:dev-ubuntu-24.04`) if you don’t have a DevContainer file with a base image defined.
 
-Add the following file to your repo: `podinfo/files/master/~/.devcontainer/devcontainer.json`
+In your gitspace, add the following file to your repo: `podinfo/files/master/~/.devcontainer/devcontainer.json`
 
 ```
 {
     "image": "mcr.microsoft.com/devcontainers/go"
 }
 ```
+
+Merge the changes.
 
 Stop and delete the GitSpace instance, then recreate it. Retry the above command, and this time, the Go build should succeed.
 
@@ -190,9 +193,11 @@ Stop and delete the GitSpace instance, then recreate it. Retry the above command
    ./podinfo
    ```
 
-4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.1`.
+4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.1`. (THIS DIDN'T WORK FOR ME)
 
 ### Create gitspaces for VS Code Browser
+
+Make sure to merge your master branch into your feature branch before continuing.
 
 1. Create a gitspaces for the `podinfo/feature` branch and open it in VS Code Browser.
 2. Make a change to `pkg/version/version.go` and update the version to **6.6.2**. Save the file.
@@ -217,7 +222,7 @@ Stop and delete the GitSpace instance, then recreate it. Retry the above command
 
 ## Secret Detection
 
-From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations= for detecting and preventing hardcoded secrets.
+From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations for detecting and preventing hardcoded secrets.
 
 Now, from one of the gitspaces, create a new file called **config.yaml** and add the following:
 
