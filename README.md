@@ -166,6 +166,24 @@ The response will look something like this:
    go build ./cmd/podinfo
    ```
 
+You should see the following error:
+
+```
+bash: go: command not found
+```
+
+GitSpaces come with an Ubuntu image (`mcr.microsoft.com/devcontainers/base:dev-ubuntu-24.04`) if you don’t have a DevContainer file with a base image defined.
+
+Add the following file to your repo: `podinfo/files/master/~/.devcontainer/devcontainer.json`
+
+```
+{
+    "image": "mcr.microsoft.com/devcontainers/go"
+}
+```
+
+Stop and delete the GitSpace instance, then recreate it. Retry the above command, and this time, the Go build should succeed.
+
 3. Run the app:
 
    ```bash
@@ -283,6 +301,24 @@ Click **Save and Run** to execute the pipeline.
 
 - For local installations, add `host.docker.internal:3000` as an insecure-registry in your docker config.
 - For cloud VM installations, add `YOUR_IP:3000` as an insecure-registry in your docker config.
+
+1. Locate your Docker configuration file:
+
+- On Linux or macOS, this is typically located at `/etc/docker/daemon.json`.
+- On Windows, you might find it at `C:\ProgramData\docker\config\daemon.json`.
+
+2. Edit the `daemon.json` file. If the file does not exist, create it.
+3. Add the following content, making sure to replace `IP:PORT` with the actual address of your insecure registry:
+
+```json
+{
+  "insecure-registries": ["IP:PORT"]
+}
+```
+
+4. Restart Docker: After saving your changes, restart the Docker service for the new configuration to take effect.
+
+`sudo systemctl restart docker` or `colima restart`.
 
 ### Verify
 
@@ -436,8 +472,10 @@ Build Event: pull_request
 Build Status: failure
 ```
 
-If we remove the Grype image scan step, we'll introduce a failure in a previous step to show the pipeline notification based on a condition.
-
 ## API
 
 Check out the [Swagger API](http://localhost:3000/swagger) to programmatically create and manage Harness resources. You'll need to [generate a token](https://developer.harness.io/docs/open-source/administration/user-management#generate-user-token) to get started.
+
+## Next Steps
+
+This was just a teaser of what you can do with Harness Open Source. Check out the [docs](https://developer.harness.io/docs/open-source/overview) to build something awesome with Harness.
