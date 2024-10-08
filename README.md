@@ -246,9 +246,9 @@ This approach is much safer than detecting secrets after they've been committed.
 
 ### Create an Artifact Registry
 
-1. Navigate to **Artifact Registries --> + New Artifact Registry** and create a new artifact registry named "harness-reg".
-2. In the registry settings, click "Set up client" to retrieve the connection credentials to that registry. Make a note of the username.
-3. Click "Generate token" and make a note of the token.
+1. Navigate to **Artifact Registries --> + New Artifact Registry** and create a new docker artifact registry named "harness-reg".
+2. In the registry settings, click **Set up client** to retrieve the connection credentials to that registry. Make a note of the username.
+3. Click **Generate token** and make a note of the token.
 
 ### Add Secrets
 
