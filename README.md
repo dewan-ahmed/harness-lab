@@ -71,7 +71,7 @@ You can send data to HTTP endpoints from actions in your repository, such as ope
 5. Choose **Let me select individual events** and select **Branch created**.
 6. Click **Create Webhook**.
 
-You'll need to reuse this webhook URL in a later section. Go to **Secrets --> + New Secret** and add a new secret called **webhook_url**. Use the value of the uniqur URL you have copied.
+You'll need to reuse this webhook URL in a later section. Go to **Secrets --> + New Secret** and add a new secret called **webhook_url**. Use the value of the unique URL you have copied.
 
 Now, click Continue to the next section to push a new branch. Once a new branch is pushed, you’ll see the trigger in action on this site.
 
