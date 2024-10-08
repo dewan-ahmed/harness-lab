@@ -193,7 +193,7 @@ Stop and delete the GitSpace instance, then recreate it. Retry the above command
    ./podinfo
    ```
 
-4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.1`. (THIS DIDN'T WORK FOR ME)
+4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.1`. 
 
 ### Create gitspaces for VS Code Browser
 
