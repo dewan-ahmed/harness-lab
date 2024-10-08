@@ -240,7 +240,7 @@ This approach is much safer than detecting secrets after they've been committed.
 
 1. In the podinfo repository, go to **Pipelines** and click **+ New Pipeline**.
 2. Click "Generate" to let Harness automatically create a pipeline for your Go project. This pipeline should install dependencies, build the app, and run tests.
-3. Click "Run" to execute the pipeline and ensure all steps complete successfully.
+3. Click "Save and Run" to execute the pipeline and ensure all steps complete successfully.
 
 ## Artifact Registry
 
