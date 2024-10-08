@@ -57,8 +57,9 @@ This command starts the Harness server, exposes it on port 3000, and mounts nece
 ### Import a Repository
 
 1. Click on the drop-down under **Repositories**, and select "Import Repository".
-2. Use `harness-community` for the organization and `podinfo` for the repository.
-3. Click **Import Repository**.
+2. The **Git Provider** is "GitHub". 
+3. Use `harness-community` for the organization and `podinfo` for the repository.
+4. Click **Import Repository**.
 
 ### Webhook
 
