@@ -25,10 +25,10 @@ docker network create harness
 docker run -d \
   --network=harness \
   -e GITNESS_CI_CONTAINER_NETWORKS=harness \
-  -e GITNESS_URL_REGISTRY=http://gitness:3000 \
-  -p 3000:3000 \
+  -e GITNESS_URL_REGISTRY=http://harness:3000 \
+  -p 3000:3000 -p 3022:3022 \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /tmp/gitness:/data \
+  -v /tmp/harness:/data \
   --name harness \
   --restart always \
   harness/harness
@@ -50,8 +50,8 @@ This command starts the Harness server, exposes it on port 3000, and mounts nece
 1. Select **New Project**.
 2. Enter a project Name (**harness-lab**) and optional Description (**Open source code hosting, pipelines, artifact registry, dev environments**).
 3. Select **Create Project**.
-> [!NOTE]
-> Harness can also [import projects](https://docs.gitness.com/administration/project-management#import-a-project) from external sources (such as GitLab groups or GitHub organizations).
+   > [!NOTE]
+   > Harness can also [import projects](https://docs.gitness.com/administration/project-management#import-a-project) from external sources (such as GitLab groups or GitHub organizations).
 4. You can organize your work in Harness by creating labels to categorize pull requests, artifacts, and more. To get started, add three labels to your project: "dev," "staging," and "prod." You can also assign specific values to each of these labels, helping to streamline project management and tracking.
 
 ### Import a Repository
@@ -77,15 +77,82 @@ Now, click Continue to the next section to push a new branch. Once a new branch 
 
 ### Create a Branch to Trigger Webhook
 
-TODO: In the previous workshop, we create a new user **developer** and use that profile to raise a PR. But that involves multiple switching back and forth between **admin** and **developer** profiles which delayed the workshop. We need to discuss the best approach to show key features and balance the workshop duration.
-
 1. Within the podinfo repository, create a new branch named "feature".
 2. On webhook.site, you should see a notification indicating that the webhook was triggered.
 
 The response will look something like this:
 
 ```json
-{"trigger":"branch_created","repo":{"id":1,"path":"testproj/podinfo","identifier":"podinfo","description":"","default_branch":"master","url":"http://159.203.33.47:3000/testproj/podinfo","git_url":"http://159.203.33.47:3000/git/testproj/podinfo.git","git_ssh_url":"ssh://git@159.203.33.47:3022/testproj/podinfo.git","uid":"podinfo"},"principal":{"id":4,"uid":"admin","display_name":"Administrator","email":"mail@example.com","type":"user","created":1724895740977,"updated":1724895740977},"ref":{"name":"refs/heads/feature3","repo":{"id":1,"path":"testproj/podinfo","identifier":"podinfo","description":"","default_branch":"master","url":"http://159.203.33.47:3000/testproj/podinfo","git_url":"http://159.203.33.47:3000/git/testproj/podinfo.git","git_ssh_url":"ssh://git@159.203.33.47:3022/testproj/podinfo.git","uid":"podinfo"}},"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","head_commit":{"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","message":"Updated pipeline testpipe","author":{"identity":{"name":"Administrator","email":"mail@example.com"},"when":"2024-09-03T17:38:34Z"},"committer":{"identity":{"name":"Gitness","email":"system@gitness.io"},"when":"2024-09-03T17:38:34Z"},"added":[],"removed":[],"modified":[]},"commit":{"sha":"dbf831f84f486243998a2f86cda9fa76d9f1b748","message":"Updated pipeline testpipe","author":{"identity":{"name":"Administrator","email":"mail@example.com"},"when":"2024-09-03T17:38:34Z"},"committer":{"identity":{"name":"Gitness","email":"system@gitness.io"},"when":"2024-09-03T17:38:34Z"},"added":[],"removed":[],"modified":[]},"old_sha":"0000000000000000000000000000000000000000","forced":false}
+{
+  "trigger": "branch_created",
+  "repo": {
+    "id": 1,
+    "path": "testproj/podinfo",
+    "identifier": "podinfo",
+    "description": "",
+    "default_branch": "master",
+    "url": "http://159.203.33.47:3000/testproj/podinfo",
+    "git_url": "http://159.203.33.47:3000/git/testproj/podinfo.git",
+    "git_ssh_url": "ssh://git@159.203.33.47:3022/testproj/podinfo.git",
+    "uid": "podinfo"
+  },
+  "principal": {
+    "id": 4,
+    "uid": "admin",
+    "display_name": "Administrator",
+    "email": "mail@example.com",
+    "type": "user",
+    "created": 1724895740977,
+    "updated": 1724895740977
+  },
+  "ref": {
+    "name": "refs/heads/feature3",
+    "repo": {
+      "id": 1,
+      "path": "testproj/podinfo",
+      "identifier": "podinfo",
+      "description": "",
+      "default_branch": "master",
+      "url": "http://159.203.33.47:3000/testproj/podinfo",
+      "git_url": "http://159.203.33.47:3000/git/testproj/podinfo.git",
+      "git_ssh_url": "ssh://git@159.203.33.47:3022/testproj/podinfo.git",
+      "uid": "podinfo"
+    }
+  },
+  "sha": "dbf831f84f486243998a2f86cda9fa76d9f1b748",
+  "head_commit": {
+    "sha": "dbf831f84f486243998a2f86cda9fa76d9f1b748",
+    "message": "Updated pipeline testpipe",
+    "author": {
+      "identity": { "name": "Administrator", "email": "mail@example.com" },
+      "when": "2024-09-03T17:38:34Z"
+    },
+    "committer": {
+      "identity": { "name": "Gitness", "email": "system@gitness.io" },
+      "when": "2024-09-03T17:38:34Z"
+    },
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "commit": {
+    "sha": "dbf831f84f486243998a2f86cda9fa76d9f1b748",
+    "message": "Updated pipeline testpipe",
+    "author": {
+      "identity": { "name": "Administrator", "email": "mail@example.com" },
+      "when": "2024-09-03T17:38:34Z"
+    },
+    "committer": {
+      "identity": { "name": "Gitness", "email": "system@gitness.io" },
+      "when": "2024-09-03T17:38:34Z"
+    },
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "old_sha": "0000000000000000000000000000000000000000",
+  "forced": false
+}
 ```
 
 ## GitSpaces
@@ -117,22 +184,22 @@ The response will look something like this:
    go build ./cmd/podinfo
    ```
 
-3. Run the app:
+4. Run the app:
 
    ```bash
    ./podinfo
    ```
 
-4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.2`.
+5. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.2`.
 
-5. Commit and push the change to feature branch. 
+6. Commit and push the change to feature branch.
 
 > [!NOTE]
 > Observe that these gitspaces instances are already configured with git credentials from Harness Open Source so you don't have to configure git credentials.
 
 ## Secret Detection
 
-From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations= for detecting and preventing hardcoded secrets. 
+From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations= for detecting and preventing hardcoded secrets.
 
 Now, from one of the gitspaces, create a new file called **config.yaml** and add the following:
 
@@ -152,15 +219,7 @@ This approach is much safer than detecting secrets after they've been committed.
 2. Click "Generate" to let Harness automatically create a pipeline for your Go project. This pipeline should install dependencies, build the app, and run tests.
 3. Click "Run" to execute the pipeline and ensure all steps complete successfully.
 
-TODO: We have a pipeline in later section that automates the build, test, and push process for our application. Are we good with these two pipelines OR do we need to show some additional pipeline features? Keep the time constraint in mind.
-
 ## Artifact Registry
-
-TODO: The following is a docs update assuming Harness Open Source instance is running on port 3000. 
-Reviewers: try following the lab without adding the entry as insecure-registry first and then add if the push fails in the later section.
-
-- For local installations, add `host.docker.internal:3000` as an insecure-registry in your docker config.
-- For cloud VM installations, add `YOUR_IP:3000` as an insecure-registry in your docker config.
 
 ### Create an Artifact Registry
 
@@ -220,11 +279,14 @@ version: 1
 
 Click **Save and Run** to execute the pipeline.
 
+#### Troubleshooting
+
+- For local installations, add `host.docker.internal:3000` as an insecure-registry in your docker config.
+- For cloud VM installations, add `YOUR_IP:3000` as an insecure-registry in your docker config.
+
 ### Verify
 
 Check the artifact registry to ensure the new image has been successfully pushed.
-
-TODO: How can we show other key artifact registry features? Please update this workshop with those features.
 
 ## Add Security Testing
 
@@ -278,8 +340,8 @@ spec:
             spec:
               container: alpine
               script: |
-                apk add --no-cache curl            
-                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin            
+                apk add --no-cache curl
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
                 /tmp/grype-bin/grype host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
       type: ci
@@ -293,18 +355,6 @@ From the "feature" branch, create a new Pull Request (PR) to the "master" branch
 ### Pipeline Execution
 
 The default trigger should automatically kick off the "build-test-push" pipeline. Ensure that a new image is built and pushed to the image registry.
-
-TODO: The above pipeline should pass upto the go_build_push step but the Grype scan might fail as follows. If you're able to debug, please do. Else, remove this step from the pipeline and continue.
-
-```
-failed to catalog: errors occurred attempting to resolve 'host.docker.internal:3000/testproj/testreg/podinfo:8':
-  - docker: docker not available: failed to connect to Docker daemon. Ensure Docker is running and accessible
-```
-
-## Deployment
-
-TODO: This is a stretch goal but you can try to use one of the drone K8s plugins to deploy the image to a local k3d cluster.
-In the [Gitness Lab](https://github.com/harness-community/gitness-lab), we used the helm3 plugin to deploy the app. But that was not the correct approach since we're not generating a helm chart for this app. Most likely we'll skip the deployment section if we don't get a working k8s plugin. This is Ok since Harness Open Source doesn't have the CD component yet.
 
 ### Notifications
 
@@ -354,8 +404,8 @@ spec:
             spec:
               container: alpine
               script: |
-                apk add --no-cache curl            
-                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin            
+                apk add --no-cache curl
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
                 /tmp/grype-bin/grype host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
           - name: notify
@@ -371,7 +421,7 @@ spec:
                   Repo Name: {{ repo.name }}
                   Build Number {{ build.number }}
                   Build Event: {{ build.event }}
-                  Build Status: {{ build.status }}    
+                  Build Status: {{ build.status }}
       type: ci
 version: 1
 ```
@@ -388,12 +438,6 @@ Build Status: failure
 
 If we remove the Grype image scan step, we'll introduce a failure in a previous step to show the pipeline notification based on a condition.
 
-## Reviewers
+## API
 
-- Please make sure all styling and formatting are consistent.
-
-- Please make sure the instructions are clear and valid.
-
-- Please suggest screenshots where text instructions are not enough.
-
-- Do you see a UI error "Cannot read properties of null (reading 'out')" whenever the pipeline executes? Patrick: if this is not already logged, we'll need to log this issue.
+Check out the [Swagger API](http://localhost:3000/swagger) to programmatically create and manage Harness resources. You'll need to [generate a token](https://developer.harness.io/docs/open-source/administration/user-management#generate-user-token) to get started.
