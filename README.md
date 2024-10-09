@@ -244,7 +244,7 @@ From **Repositories --> podinfo --> Manage Repository --> Security**, enable **S
 Now, from one of the gitspaces, create a new file called **config.yaml** and add the following:
 
 ```bash
-pat.W3bJ9X4K2L8V7fH1pG0M5nQ.ZM1cP9gB5L2vJ8K6R3wY1N4z.X9V7cT3pB5M1nF2G4J0K
+SECRET=pat.W3bJ9X4K2L8V7fH1pG0M5nQ.ZM1cP9gB5L2vJ8K6R3wY1N4z.X9V7cT3pB5M1nF2G4J0K
 ```
 
 The above follows the same pattern as a Harness Personal Access Token. While this is not a valid token, the built-in scanner in Harness will detect the pattern and prevent you from pushing this commit.
