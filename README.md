@@ -57,7 +57,7 @@ This command starts the Harness server, exposes it on port 3000, and mounts nece
 ### Import a Repository
 
 1. Click on the drop-down under **Repositories**, and select "Import Repository".
-2. The **Git Provider** is "GitHub". 
+2. The **Git Provider** is "GitHub".
 3. Use `harness-community` for the organization and `podinfo` for the repository.
 4. Click **Import Repository**.
 
@@ -194,7 +194,23 @@ Stop and delete the GitSpace instance, then recreate it. Retry the above command
    ./podinfo
    ```
 
-4. Open your browser and navigate to [http://localhost:9898](http://localhost:9898) to see the app running version `6.6.1`. 
+4. Open another terminal within VS code and `curl localhost:9898` to see the app running version `6.6.1`:
+
+```json
+{
+  "hostname": "032d90c07ce6",
+  "version": "6.6.1",
+  "revision": "unknown",
+  "color": "#34577c",
+  "logo": "https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif",
+  "message": "greetings from podinfo v6.6.1",
+  "goos": "linux",
+  "goarch": "arm64",
+  "runtime": "go1.23.1",
+  "num_goroutine": "6",
+  "num_cpu": "2"
+}
+```
 
 ### Create gitspaces for VS Code Browser
 
