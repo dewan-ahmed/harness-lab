@@ -1,0 +1,102 @@
+kind: pipeline
+spec:
+  stages:
+    - name: e2e
+      spec:
+        platform:
+          arch: amd64
+          os: linux
+        steps:
+          - name: setup
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go install ./...
+            type: run
+          - name: test
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go test -v ./...
+            type: run
+          - name: build
+            type: plugin
+            spec:
+              name: docker
+              inputs:
+                insecure: true
+                repo: host.docker.internal:3000/testproj/testreg/podinfo
+                registry: host.docker.internal:3000
+                username: ${{ secrets.get("docker_username") }}
+                password: ${{ secrets.get("docker_password") }}
+                tags: ${{ build.number }}
+          - name: scan
+            type: run
+            spec:
+              container: alpine
+              envs:
+                GRYPE_REGISTRY_INSECURE: "true"
+                GRYPE_REGISTRY_INSECURE_USE_HTTP: "true"
+                GRYPE_REGISTRY_INSECURE_SKIP_TLS_VERIFY: "true"
+                GRYPE_REGISTRY_AUTH_USERNAME: ${{ secrets.get("docker_username") }}
+                GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                apk add --no-cache curl          
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin          
+                /tmp/grype-bin/grype host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                echo "Image scan completed!"
+          - name: deploy
+            type: run
+            spec:
+              container: bitnami/kubectl
+              envs:
+                KUBECONFIG_CONTENT: ${{ secrets.get("kubeconfig") }}
+                KUBECONFIG: /tmp/kubeconfig.yaml
+                FRONTEND_IMAGE: host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                BACKEND_IMAGE: host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                DOCKER_CONFIG_JSON: ${{ secrets.get("docker-config-json") }}
+                DOCKER_USERNAME: ${{ secrets.get("docker_username") }}
+                DOCKER_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                kubectl version --client
+                envsubst --version
+                
+                # set correct kubeconfig
+                echo "$KUBECONFIG_CONTENT" > $KUBECONFIG
+
+                # apply kubeconfig
+                cd deploy
+
+                # apply common manifests
+                kubectl apply -f ./webapp/common
+
+                # create a docker registry secrete yaml
+                kubectl create secret docker-registry harness-registry-secret \
+                  --docker-server=host.docker.internal:3000 \
+                  --docker-username=$DOCKER_USERNAME \
+                  --docker-password=$DOCKER_PASSWORD \
+                  -n webapp \
+                  --dry-run=client \
+                  -o yaml | kubectl apply -f -
+
+                # apply backend manifest
+                kubectl apply -f ./webapp/backend
+                envsubst < ./webapp/backend/deployment.yaml | kubectl apply -f -
+
+                # apply frontend manifest
+                kubectl apply -f ./webapp/frontend
+                envsubst < ./webapp/frontend/deployment.yaml | kubectl apply -f -
+
+                #  check the rollout status
+                kubectl rollout status --namespace webapp deployment/frontend --timeout=1m
+
+                # verify running pods and services
+                kubectl get pods --namespace webapp
+                kubectl get services --namespace webapp
+
+                echo "success"
+              shell: bash
+      type: ci
+version: 1
