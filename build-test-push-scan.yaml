@@ -1,0 +1,54 @@
+version: 1
+kind: pipeline
+spec:
+  stages:
+    - name: build-test-push-scan
+      spec:
+        platform:
+          arch: amd64
+          os: linux
+        steps:
+          - name: go_install
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go install ./...
+            type: run
+          - name: go_test
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go test -v ./...
+            type: run
+          - name: go_build_push
+            type: plugin
+            spec:
+              name: docker
+              inputs:
+                insecure: true
+                repo: host.docker.internal:3000/testproj/testreg/podinfo
+                registry: host.docker.internal:3000
+                username: ${{ secrets.get("docker_username") }}
+                password: ${{ secrets.get("docker_password") }}
+                tags: ${{ build.number }}
+          - name: Grype_Image_Scan
+            type: run
+            spec:
+              container: alpine
+              envs:
+                GRYPE_REGISTRY_INSECURE: "true"
+                GRYPE_REGISTRY_INSECURE_USE_HTTP: "true"
+                GRYPE_REGISTRY_INSECURE_SKIP_TLS_VERIFY: "true"
+                GRYPE_REGISTRY_AUTH_USERNAME: ${{ secrets.get("docker_username") }}
+                GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                apk add --no-cache curl          
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin          
+                /tmp/grype-bin/grype host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                echo "Image scan completed!"
+      type: ci
+  version: 1
+
+
