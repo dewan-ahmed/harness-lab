@@ -224,6 +224,31 @@ The response will look something like this:
 }
 ```
 
+### Secret Detection
+
+From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations for detecting and preventing hardcoded secrets.
+
+Now, from **Repositories --> podinfo** click **Clone** and copy the HTTPS git clone URL. Clone and open this repository on your code editor. Right below the **Git clone URL**, click the button to generate clone credential.
+
+On your code editor, create a new file called **config.yaml** under the podinfo repository and add the following:
+
+```bash
+SECRET=pat.W3bJ9X4K2L8V7fH1pG0M5nQ.ZM1cP9gB5L2vJ8K6R3wY1N4z.X9V7cT3pB5M1nF2G4J0K
+```
+
+The above follows the same pattern as a Harness Personal Access Token. While this is not a valid token, it has the same pattern as a Harness Personal Access Token.
+
+Configure git credentials before you commit:
+
+```bash
+git config -–global user.email “admin@example.com”
+git config –global user.name “admin”
+```
+
+Now save the `config.yaml` file and try to commit and push the changes. Use the Git credentials you copied earlier. The built-in scanner in Harness will detect the pattern and prevent you from pushing the commit.
+
+This approach is much safer than detecting secrets after they've been committed.
+
 ## GitSpaces
 
 ### Create a GitSpace for VS Code Desktop
@@ -304,20 +329,6 @@ Make sure to merge your master branch into your feature branch before continuing
 
 > [!NOTE]
 > Observe that these gitspaces instances are already configured with git credentials from Harness Open Source so you don't have to configure git credentials.
-
-## Secret Detection
-
-From **Repositories --> podinfo --> Manage Repository --> Security**, enable **Secret Scanning**. Harness Open Source includes [gitleaks](https://github.com/gitleaks/gitleaks) integrations for detecting and preventing hardcoded secrets.
-
-Now, from one of the gitspaces, create a new file called **config.yaml** and add the following:
-
-```bash
-SECRET=pat.W3bJ9X4K2L8V7fH1pG0M5nQ.ZM1cP9gB5L2vJ8K6R3wY1N4z.X9V7cT3pB5M1nF2G4J0K
-```
-
-The above follows the same pattern as a Harness Personal Access Token. While this is not a valid token, the built-in scanner in Harness will detect the pattern and prevent you from pushing this commit.
-
-This approach is much safer than detecting secrets after they've been committed.
 
 ## Pipeline
 
