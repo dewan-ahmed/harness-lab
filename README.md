@@ -6,26 +6,28 @@ This lab will guide you through setting up and using Harness Open Source (referr
 
 Before starting, ensure you have the following installed on your local machine:
 
-- Docker
+- Docker runtime and client (Docker Desktop, Rancher Desktop, or Colima)
 - VS Code (optional but recommended for working with GitSpaces)
+- [k3d](https://k3d.io/) for a local Kubernetes cluster
+- [kubectl](https://formulae.brew.sh/formula/kubernetes-cli) for interacting with the Kubernetes cluster
 
-If Docker is not already installed on your system, you can set it up using [Colima](https://github.com/abiosoft/colima?tab=readme-ov-file#installation), a lightweight container runtime for macOS and Linux. Note that you'll still need the Docker CLI (Docker client) to interact with Colima, so ensure that the Docker client is installed and configured on your machine.
+Configure insecure registries based on your docker daemon:
 
-## Setup and Installation
-
-1. Create a common network:
-
-```bash
-docker network create harness
+```json
+"insecure-registries": [
+    "localhost:3000",
+    "0.0.0.0:3000",
+    "127.0.0.1:3000",
+    "host.docker.internal:3000"
+  ]
 ```
 
-2. Run the following command to start a Harness instance that uses the `harness` network:
+## Harness Installation
+
+1. Run the following command to start a Harness instance:
 
 ```bash
 docker run -d \
-  --network=harness \
-  -e GITNESS_CI_CONTAINER_NETWORKS=harness \
-  -e GITNESS_URL_REGISTRY=http://harness:3000 \
   -p 3000:3000 -p 3022:3022 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /tmp/harness:/data \
@@ -36,12 +38,78 @@ docker run -d \
 
 This command starts the Harness server, exposes it on port 3000, and mounts necessary volumes for Docker and persistent data storage.
 
-3. Follow these steps to create an admin user:
+2. Follow these steps to create an admin user:
 
    - Once the container is running, open http://localhost:3000 in your browser.
    - Select **Sign Up**.
    - Enter a User ID (`admin`), Email (`admin@example.com`), and Password (`changeit`).
    - Select **Sign Up**. (You might see a warning to change your password. You can ignore that warning.)
+
+## Kubernetes Cluster Setup
+
+1. Create a directory for the kubeconfig file:
+
+```bash
+mkdir -p /tmp/k3d
+```
+
+2. Create and open the kubeconfig file:
+
+```bash
+vim /tmp/k3d/config.yaml
+```
+
+3. Copy the following content to the above file:
+
+```YAML
+apiVersion: k3d.io/v1alpha4 # this will change in the future as we make everything more stable
+kind: Simple # internally, we also have a Cluster config, which is not yet available externally
+metadata:
+  name: podinfo # name that you want to give to your cluster (will still be prefixed with `k3d-`)
+servers: 1 # same as `--servers 1`
+ports:
+  - port: 30005-30010:30005-30010 # same as `--port '8080:80@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
+registries: # define how registries should be created or used
+  config: | # define contents of the `registries.yaml` file (or reference a file); same as `--registry-config /path/to/config.yaml`
+    mirrors:
+      "host.docker.internal:3000":
+        endpoint:
+          - http://host.docker.internal:3000
+options:
+  k3s: # options passed on to K3s itself
+    extraArgs: # additional arguments passed to the `k3s server|agent` command; same as `--k3s-arg`
+      - arg: --tls-san=host.docker.internal
+        nodeFilters:
+          - server:*
+```
+
+4. Create a k3d cluster:
+
+```bash
+k3d cluster create -c /tmp/k3d/config.yaml
+```
+
+5. Copy the kubeconfig to the clipboard and save it temporarily:
+
+For macOS:
+
+```bash
+k3d kubeconfig get podinfo | sed 's/0.0.0.0/host.docker.internal/g' | pbcopy
+```
+
+For Linux:
+
+```bash
+k3d kubeconfig get podinfo | sed 's/0.0.0.0/host.docker.internal/g' | xclip -selection clipboard
+```
+
+OR
+
+```bash
+k3d kubeconfig get podinfo | sed 's/0.0.0.0/host.docker.internal/g' | xsel --clipboard
+```
 
 ## Project and Repository
 
@@ -88,13 +156,13 @@ The response will look something like this:
   "trigger": "branch_created",
   "repo": {
     "id": 1,
-    "path": "testproj/podinfo",
+    "path": "harness-lab/podinfo",
     "identifier": "podinfo",
     "description": "",
     "default_branch": "master",
-    "url": "http://159.203.33.47:3000/testproj/podinfo",
-    "git_url": "http://159.203.33.47:3000/git/testproj/podinfo.git",
-    "git_ssh_url": "ssh://git@159.203.33.47:3022/testproj/podinfo.git",
+    "url": "http://159.203.33.47:3000/harness-lab/podinfo",
+    "git_url": "http://159.203.33.47:3000/git/harness-lab/podinfo.git",
+    "git_ssh_url": "ssh://git@159.203.33.47:3022/harness-lab/podinfo.git",
     "uid": "podinfo"
   },
   "principal": {
@@ -110,13 +178,13 @@ The response will look something like this:
     "name": "refs/heads/feature3",
     "repo": {
       "id": 1,
-      "path": "testproj/podinfo",
+      "path": "harness-lab/podinfo",
       "identifier": "podinfo",
       "description": "",
       "default_branch": "master",
-      "url": "http://159.203.33.47:3000/testproj/podinfo",
-      "git_url": "http://159.203.33.47:3000/git/testproj/podinfo.git",
-      "git_ssh_url": "ssh://git@159.203.33.47:3022/testproj/podinfo.git",
+      "url": "http://159.203.33.47:3000/harness-lab/podinfo",
+      "git_url": "http://159.203.33.47:3000/git/harness-lab/podinfo.git",
+      "git_ssh_url": "ssh://git@159.203.33.47:3022/harness-lab/podinfo.git",
       "uid": "podinfo"
     }
   },
@@ -270,9 +338,10 @@ This approach is much safer than detecting secrets after they've been committed.
 ### Add Secrets
 
 1. Navigate to Secrets in the Harness dashboard.
-2. Add two secrets:
+2. Add three secrets:
    - `docker_username`: Use the registry username from the previous step. For most cases, this would be **admin**.
    - `docker_password`: Use the generated token from the previous step.
+   - `kubeconfig`: Use the kubeconfig copied from a previous section.
 
 ### Create a Pipeline for Build, Test, and Push
 
@@ -352,120 +421,289 @@ In this step, we use a popular open source image scanning tool called [Grype](ht
 
 ### Updated Pipeline
 
-Modify the pipeline to include a new step for Grype scanning:
+Modify the [pipeline](build-test-push-scan.yaml) to include a new step for Grype scanning:
+
+```YAML
+version: 1
+kind: pipeline
+spec:
+  stages:
+    - name: build-test-push-scan
+      spec:
+        platform:
+          arch: amd64
+          os: linux
+        steps:
+          - name: go_install
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go install ./...
+            type: run
+          - name: go_test
+            spec:
+              container:
+                image: golang:1.23
+              script:
+                - go test -v ./...
+            type: run
+          - name: go_build_push
+            type: plugin
+            spec:
+              name: docker
+              inputs:
+                insecure: true
+                repo: host.docker.internal:3000/harnes-lab/harness-reg/podinfo
+                registry: host.docker.internal:3000
+                username: ${{ secrets.get("docker_username") }}
+                password: ${{ secrets.get("docker_password") }}
+                tags: ${{ build.number }}
+          - name: Grype_Image_Scan
+            type: run
+            spec:
+              container: alpine
+              envs:
+                GRYPE_REGISTRY_INSECURE: "true"
+                GRYPE_REGISTRY_INSECURE_USE_HTTP: "true"
+                GRYPE_REGISTRY_INSECURE_SKIP_TLS_VERIFY: "true"
+                GRYPE_REGISTRY_AUTH_USERNAME: ${{ secrets.get("docker_username") }}
+                GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                apk add --no-cache curl
+                curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
+                /tmp/grype-bin/grype host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                echo "Image scan completed!"
+      type: ci
+  version: 1
+```
+
+### Update default trigger
+
+Each pipeline comes with a default trigger. From the pipeline settings, update the default trigger to activate the pipeline only on **Pull Request Merged** events.
+
+![Pipeline Triggers](assets/pipeline-triggers.png)
+
+### Merge a Pull Request to trigger the pipeline
+
+From the "feature" branch, create a new Pull Request (PR) to the "master" branch and merge the PR. This will trigger the pipeline and the **Grype_Image_Scan** step will scan the newly built image for vulnerabilities.
+
+## Deploy to Kubernetes
+
+Update the [pipeline](build-test-push-scan-deploy.yaml) as follows:
 
 ```YAML
 kind: pipeline
 spec:
   stages:
-    - name: build-test-push-scan
+    - name: e2e
       spec:
         platform:
           arch: amd64
           os: linux
         steps:
-          - name: go_install
+          - name: setup
             spec:
               container:
                 image: golang:1.23
               script:
                 - go install ./...
             type: run
-          - name: go_test
+          - name: test
             spec:
               container:
                 image: golang:1.23
               script:
                 - go test -v ./...
             type: run
-          - name: go_build_push
+          - name: build
             type: plugin
             spec:
               name: docker
               inputs:
                 insecure: true
-                repo: host.docker.internal:3000/harness-lab/harness-reg/podinfo
+                repo: host.docker.internal:3000/harnes-lab/harness-reg/podinfo
                 registry: host.docker.internal:3000
                 username: ${{ secrets.get("docker_username") }}
                 password: ${{ secrets.get("docker_password") }}
                 tags: ${{ build.number }}
-          - name: Grype_Image_Scan
+          - name: scan
             type: run
-            when: |
-              build.event == "pull_request"
-              and
-              build.target == "master"
             spec:
               container: alpine
+              envs:
+                GRYPE_REGISTRY_INSECURE: "true"
+                GRYPE_REGISTRY_INSECURE_USE_HTTP: "true"
+                GRYPE_REGISTRY_INSECURE_SKIP_TLS_VERIFY: "true"
+                GRYPE_REGISTRY_AUTH_USERNAME: ${{ secrets.get("docker_username") }}
+                GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.get("docker_password") }}
               script: |
                 apk add --no-cache curl
                 curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
-                /tmp/grype-bin/grype host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
+                /tmp/grype-bin/grype host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
+          - name: deploy
+            type: run
+            spec:
+              container: bitnami/kubectl
+              envs:
+                KUBECONFIG_CONTENT: ${{ secrets.get("kubeconfig") }}
+                KUBECONFIG: /tmp/kubeconfig.yaml
+                FRONTEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                BACKEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                DOCKER_CONFIG_JSON: ${{ secrets.get("docker-config-json") }}
+                DOCKER_USERNAME: ${{ secrets.get("docker_username") }}
+                DOCKER_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                kubectl version --client
+                envsubst --version
+
+                # set correct kubeconfig
+                echo "$KUBECONFIG_CONTENT" > $KUBECONFIG
+
+                # apply kubeconfig
+                cd deploy
+
+                # apply common manifests
+                kubectl apply -f ./webapp/common
+
+                # create a docker registry secrete yaml
+                kubectl create secret docker-registry harness-registry-secret \
+                  --docker-server=host.docker.internal:3000 \
+                  --docker-username=$DOCKER_USERNAME \
+                  --docker-password=$DOCKER_PASSWORD \
+                  -n webapp \
+                  --dry-run=client \
+                  -o yaml | kubectl apply -f -
+
+                # apply backend manifest
+                kubectl apply -f ./webapp/backend
+                envsubst < ./webapp/backend/deployment.yaml | kubectl apply -f -
+
+                # apply frontend manifest
+                kubectl apply -f ./webapp/frontend
+                envsubst < ./webapp/frontend/deployment.yaml | kubectl apply -f -
+
+                #  check the rollout status
+                kubectl rollout status --namespace webapp deployment/frontend --timeout=1m
+
+                # verify running pods and services
+                kubectl get pods --namespace webapp
+                kubectl get services --namespace webapp
+
+                echo "success"
+              shell: bash
       type: ci
 version: 1
 ```
 
-### Create a Pull Request to trigger the pipeline
-
-From the "feature" branch, create a new Pull Request (PR) to the "master" branch. The conditions for the **Grype_Image_Scan** step will be met, and the pipeline will execute the Grype scan as part of the CI process.
-
-### Pipeline Execution
-
-The default trigger should automatically kick off the "build-test-push" pipeline. Ensure that a new image is built and pushed to the image registry.
+After the pipeline succeeds, visit `http://localhost:30006` to use the deployed frontend service.
 
 ### Notifications
 
-Update the pipeline to add a notifications step on build failure.
+Update the pipeline to add a notifications step on pipeline failure.
 
 ```
 kind: pipeline
 spec:
   stages:
-    - name: build-test-push-scan
+    - name: e2e
       spec:
         platform:
           arch: amd64
           os: linux
         steps:
-          - name: go_install
+          - name: setup
             spec:
               container:
                 image: golang:1.23
               script:
                 - go install ./...
             type: run
-          - name: go_test
+          - name: test
             spec:
               container:
                 image: golang:1.23
               script:
                 - go test -v ./...
             type: run
-          - name: go_build_push
+          - name: build
             type: plugin
             spec:
               name: docker
               inputs:
                 insecure: true
-                repo: host.docker.internal:3000/testproj/testreg/podinfo
+                repo: host.docker.internal:3000/harnes-lab/harness-reg/podinfo
                 registry: host.docker.internal:3000
                 username: ${{ secrets.get("docker_username") }}
                 password: ${{ secrets.get("docker_password") }}
                 tags: ${{ build.number }}
-          - name: Grype_Image_Scan
+          - name: scan
             type: run
-            when: |
-              build.event == "pull_request"
-              and
-              build.target == "master"
             spec:
               container: alpine
+              envs:
+                GRYPE_REGISTRY_INSECURE: "true"
+                GRYPE_REGISTRY_INSECURE_USE_HTTP: "true"
+                GRYPE_REGISTRY_INSECURE_SKIP_TLS_VERIFY: "true"
+                GRYPE_REGISTRY_AUTH_USERNAME: ${{ secrets.get("docker_username") }}
+                GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.get("docker_password") }}
               script: |
                 apk add --no-cache curl
                 curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
-                /tmp/grype-bin/grype host.docker.internal:3000/testproj/testreg/podinfo:${{ build.number }}
+                /tmp/grype-bin/grype host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
+          - name: deploy
+            type: run
+            spec:
+              container: bitnami/kubectl
+              envs:
+                KUBECONFIG_CONTENT: ${{ secrets.get("kubeconfig") }}
+                KUBECONFIG: /tmp/kubeconfig.yaml
+                FRONTEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                BACKEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                DOCKER_CONFIG_JSON: ${{ secrets.get("docker-config-json") }}
+                DOCKER_USERNAME: ${{ secrets.get("docker_username") }}
+                DOCKER_PASSWORD: ${{ secrets.get("docker_password") }}
+              script: |
+                kubectl version --client
+                envsubst --version
+
+                # set correct kubeconfig
+                echo "$KUBECONFIG_CONTENT" > $KUBECONFIG
+
+                # apply kubeconfig
+                cd deploy
+
+                # apply common manifests
+                kubectl apply -f ./webapp/common
+
+                # create a docker registry secrete yaml
+                kubectl create secret docker-registry harness-registry-secret \
+                  --docker-server=host.docker.internal:3000 \
+                  --docker-username=$DOCKER_USERNAME \
+                  --docker-password=$DOCKER_PASSWORD \
+                  -n webapp \
+                  --dry-run=client \
+                  -o yaml | kubectl apply -f -
+
+                # apply backend manifest
+                kubectl apply -f ./webapp/backend
+                envsubst < ./webapp/backend/deployment.yaml | kubectl apply -f -
+
+                # apply frontend manifest
+                kubectl apply -f ./webapp/frontend
+                envsubst < ./webapp/frontend/deployment.yaml | kubectl apply -f -
+
+                #  check the rollout status
+                kubectl rollout status --namespace webapp deployment/frontend --timeout=1m
+
+                # verify running pods and services
+                kubectl get pods --namespace webapp
+                kubectl get services --namespace webapp
+
+                echo "success"
+              shell: bash
           - name: notify
             type: plugin
             when: failure()
@@ -484,7 +722,7 @@ spec:
 version: 1
 ```
 
-Since the Grype_Image_Scan step will fail, the notification step will be triggered and you'll see a notification like this on webhook.site:
+Introduce a failure in the pipeline for the notification step to be triggered and you'll see a notification like this on `webhook.site`:
 
 ```
 Name: Harness Build Notification
