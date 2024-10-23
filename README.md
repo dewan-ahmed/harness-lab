@@ -242,7 +242,7 @@ Configure git credentials before you commit:
 
 ```bash
 git config -–global user.email “admin@example.com”
-git config –global user.name “admin”
+git config -–global user.name “admin”
 ```
 
 Now save the `config.yaml` file and try to commit and push the changes. Use the Git credentials you copied earlier. The built-in scanner in Harness will detect the pattern and prevent you from pushing the commit.
