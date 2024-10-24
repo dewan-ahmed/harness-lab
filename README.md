@@ -465,7 +465,7 @@ spec:
               name: docker
               inputs:
                 insecure: true
-                repo: host.docker.internal:3000/harnes-lab/harness-reg/podinfo
+                repo: host.docker.internal:3000/harness-lab/harness-reg/podinfo
                 registry: host.docker.internal:3000
                 username: ${{ secrets.get("docker_username") }}
                 password: ${{ secrets.get("docker_password") }}
@@ -483,7 +483,7 @@ spec:
               script: |
                 apk add --no-cache curl
                 curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
-                /tmp/grype-bin/grype host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                /tmp/grype-bin/grype host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
       type: ci
   version: 1
@@ -551,7 +551,7 @@ spec:
               script: |
                 apk add --no-cache curl
                 curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /tmp/grype-bin
-                /tmp/grype-bin/grype host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                /tmp/grype-bin/grype host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
                 echo "Image scan completed!"
           - name: deploy
             type: run
@@ -560,8 +560,8 @@ spec:
               envs:
                 KUBECONFIG_CONTENT: ${{ secrets.get("kubeconfig") }}
                 KUBECONFIG: /tmp/kubeconfig.yaml
-                FRONTEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
-                BACKEND_IMAGE: host.docker.internal:3000/harnes-lab/harness-reg/podinfo:${{ build.number }}
+                FRONTEND_IMAGE: host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
+                BACKEND_IMAGE: host.docker.internal:3000/harness-lab/harness-reg/podinfo:${{ build.number }}
                 DOCKER_CONFIG_JSON: ${{ secrets.get("docker-config-json") }}
                 DOCKER_USERNAME: ${{ secrets.get("docker_username") }}
                 DOCKER_PASSWORD: ${{ secrets.get("docker_password") }}
